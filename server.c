@@ -6,11 +6,39 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include "gui.h"
+
+#define screenWidth 1600
+#define screenHeight 900
+
 #define PORT 9001
 #define BUFF_SIZE 5000
 
 int main(int argc, char const* argv[])
 {
+	InitWindow(screenWidth, screenHeight, "Arduino movement");
+
+	Camera camera = { 0 };
+
+	initCamera(&camera);
+
+	Model model = createModel();
+
+	float pitch = 0.0f;
+
+	float roll = 0.0f;
+
+	float yaw = 0.0f;
+
+	float posX = 0.0f;
+	float posY = 0.0f;
+	float posZ = 0.0f;
+
+	Vector3 position = { posX,posY,posZ};
+
+	SetTargetFPS(120);
+
+
 	int server_fd, client1, client2, valread;
 	struct sockaddr_in servAddr, address1, address2;
 	int opt = 1;
@@ -53,6 +81,7 @@ int main(int argc, char const* argv[])
 		exit(EXIT_FAILURE);
 	} else {
 		printf("Listening...\n");
+
 	}
 
 	// CONNECTING CLIENT 1
@@ -77,34 +106,41 @@ int main(int argc, char const* argv[])
 		printf("Connected to client 2.\n");
 	}
 
-	// COMMUNICATION BETWEEN CLIENT 1 & 2
-//	char *token;
-//	char delim[1] = ";";
-//	while (1) {
-//		bzero(buffer, BUFF_SIZE);
-//		valread = recv(client1, buffer, BUFF_SIZE, 0);
-//		if (valread > 0) {
-//			printf("Recv: %s\n", buffer);
-//			token = strtok(buffer, ";");
-//			while (token != NULL) {
-//				send(client2, token, strlen(token), 0);
-//				send(client2, delim, 1, 0);
-//				token = strtok(NULL, ";");
-//			}
-//		}
-//	}
+//	 COMMUNICATION BETWEEN CLIENT 1 & 2
+	char *token;
+	char delim[1] = ";";
+	while (1) {
+		bzero(buffer, BUFF_SIZE);
+		valread = recv(client1, buffer, BUFF_SIZE, 0);
+		if (valread > 0) {
+			printf("Recv: %s\n", buffer);
+			token = strtok(buffer, ";");
+			while (token != NULL) {
+				send(client2, token, strlen(token), 0);
+				send(client2, delim, 1, 0);
+				token = strtok(NULL, ";");
+			}
+		}
+	}
 
 	// COMMUNICATION BETWEEN CLIENT 1 & 2
-	while (1) {
+	while (!WindowShouldClose()) {
 		bzero(buffer, BUFF_SIZE);
 		valread = recv(client1, buffer, BUFF_SIZE, 0);
 		if (valread > 0) {
 			printf("Recv: %s\n", buffer);
 			send(client2, buffer, strlen(buffer), 0);
 		}
+		handleInput(&pitch, &roll, &yaw, &position);
+
+		updateModel(&model, pitch, roll, yaw);
+		camera.position = (Vector3){ position.x, position.y + 50.0f, position.z - 60.0f };
+		camera.target = (Vector3){ position.x, position.y, position.z };
+		draw(&model, &camera);
 	}
 
 	// CLOSE CLIENT CONNECTION
+	CloseWindow();
 	printf("Exiting program...\n");
 	close(client1);
 	close(client2);
