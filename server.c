@@ -124,12 +124,29 @@ int main(int argc, char const* argv[])
 	}
 
 	// COMMUNICATION BETWEEN CLIENT 1 & 2
+	char *token;
+	char delim[1] = ";";
 	while (!WindowShouldClose()) {
 		bzero(buffer, BUFF_SIZE);
 		valread = recv(client1, buffer, BUFF_SIZE, 0);
 		if (valread > 0) {
-			printf("Recv: %s\n", buffer);
-			send(client2, buffer, strlen(buffer), 0);
+			strtok(buffer, "Gx");
+			token = strtok(NULL, "Gy");
+			pitch = atof(token);
+			token = strtok(NULL, "Gz");
+			roll = atof(token);
+			token = strtok(NULL, "Ax");
+			yaw = atof(token);
+			token = strtok(NULL, "Ay");
+			posX = atof(token);
+			token = strtok(NULL, "Az");
+			posY = atof(token);
+			token = strtok(NULL, "G");
+			posZ = atof(token);
+			token = strtok(NULL, ";");
+
+			send(client2, token, strlen(token), 0);
+			send(client2, delim, strlen(delim), 0);
 		}
 		handleInput(&pitch, &roll, &yaw, &position);
 
